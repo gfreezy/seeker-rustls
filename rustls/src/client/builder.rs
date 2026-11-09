@@ -163,6 +163,7 @@ impl ConfigBuilder<ClientConfig, WantsClientCert> {
         client_auth_cert_resolver: Arc<dyn ResolvesClientCert>,
     ) -> ClientConfig {
         ClientConfig {
+            client_hello_customizer: None,
             provider: self.provider,
             alpn_protocols: Vec::new(),
             resumption: Resumption::default(),

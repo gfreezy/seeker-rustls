@@ -444,7 +444,7 @@ fn emit_client_hello_for_retry(
         _ => None,
     };
 
-    let ch = Message {
+    let mut ch = Message {
         version: match retryreq {
             // <https://datatracker.ietf.org/doc/html/rfc8446#section-5.1>:
             // "This value MUST be set to 0x0303 for all records generated
@@ -459,6 +459,38 @@ fn emit_client_hello_for_retry(
         },
         payload: MessagePayload::handshake(chp),
     };
+
+    if let Some(customizer) = &config.client_hello_customizer {
+        if retryreq.is_some()
+            || config.enable_early_data
+            || ech_state.is_some()
+            || tls13_early_data_key_schedule.is_some()
+        {
+            return Err(Error::General(
+                "ClientHello customization requires a fresh handshake without ECH or retries"
+                    .into(),
+            ));
+        }
+        let mut encoded = Vec::new();
+        ch.payload.encode(&mut encoded);
+        customizer.customize(&mut encoded, key_share.as_deref())?;
+        let payload =
+            MessagePayload::new(ContentType::Handshake, ProtocolVersion::TLSv1_3, &encoded)?
+                .into_owned();
+        if let MessagePayload::Handshake {
+            parsed: HandshakeMessagePayload(HandshakePayload::ClientHello(hello)),
+            ..
+        } = &payload
+        {
+            input.session_id = hello.session_id;
+            input.hello.sent_extensions = hello.collect_used();
+        } else {
+            return Err(Error::General(
+                "customizer did not return a ClientHello".into(),
+            ));
+        }
+        ch.payload = payload;
+    }
 
     if retryreq.is_some() {
         // send dummy CCS to fool middleboxes prior

@@ -132,6 +132,17 @@ pub trait ResolvesClientCert: fmt::Debug + Send + Sync {
     fn has_certs(&self) -> bool;
 }
 
+/// Customizes an encoded ClientHello before it is hashed and sent.
+/// This advanced extension point is used for REALITY authentication.
+pub trait ClientHelloCustomizer: fmt::Debug + Send + Sync {
+    /// Rewrite a handshake message. HelloRetryRequest is rejected by the caller.
+    fn customize(
+        &self,
+        hello: &mut Vec<u8>,
+        key_exchange: Option<&dyn crate::crypto::ActiveKeyExchange>,
+    ) -> Result<(), Error>;
+}
+
 /// Common configuration for (typically) all connections made by a program.
 ///
 /// Making one of these is cheap, though one of the inputs may be expensive: gathering trust roots
@@ -162,6 +173,11 @@ pub trait ResolvesClientCert: fmt::Debug + Send + Sync {
 /// [`RootCertStore`]: crate::RootCertStore
 #[derive(Clone, Debug)]
 pub struct ClientConfig {
+    /// Optional ClientHello customization before transcript hashing. The callback must
+    /// preserve the random, offered key shares and algorithms supported by this config.
+    /// Use only with resumption, early data and ECH disabled.
+    pub client_hello_customizer: Option<Arc<dyn ClientHelloCustomizer>>,
+
     /// Which ALPN protocols we include in our client hello.
     /// If empty, no ALPN extension is sent.
     pub alpn_protocols: Vec<Vec<u8>>,

@@ -1,3 +1,11 @@
+# Seeker REALITY fork
+
+This branch adds the minimal TLS extension points used by [Seeker](https://github.com/gfreezy/seeker).
+It is based on upstream rustls **0.23.35**. See [SEEKER-PATCH.md](SEEKER-PATCH.md)
+for the changes, limitations and update procedure. Seeker pins an exact Git commit.
+
+---
+
 <p align="center">
   <img width="460" height="300" src="https://raw.githubusercontent.com/rustls/rustls/main/admin/rustls-logo-web.png">
 </p>

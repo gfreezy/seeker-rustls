@@ -431,6 +431,11 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
 
 /// An in-progress key exchange originating from a [`SupportedKxGroup`].
 pub trait ActiveKeyExchange: Send + Sync {
+    /// Optional access to a custom key exchange for protocol-specific authentication.
+    fn as_any(&self) -> Option<&dyn core::any::Any> {
+        None
+    }
+
     /// Completes the key exchange, given the peer's public key.
     ///
     /// This method must return an error if `peer_pub_key` is invalid: either
